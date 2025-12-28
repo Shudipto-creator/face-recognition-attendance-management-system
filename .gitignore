@@ -132,10 +132,10 @@ dmypy.json
 #uploads/
 
 # Face recognition specific
-Training images/*.jpg
-Training images/*.jpeg
-Training images/*.png
-Training images/*.gif
+#Training images/*.jpg
+#raining images/*.jpeg
+#Training images/*.png
+#Training images/*.gif
 
 # IDE
 .vscode/
