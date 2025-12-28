@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Login V3</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="{{ url_for('static', filename='images/favicon.ico') }}" rel="stylesheet">
+
+<link href="{{ url_for('static', filename='fonts/font-awesome-4.7.0/css/font-awesome.min.css') }}" rel="stylesheet" type="text/css">
+	
+
+<link href="{{ url_for('static', filename='fonts/iconic/css/material-design-iconic-font.min.css') }}" rel="stylesheet" type="text/css">
+
+<link href="{{ url_for('static', filename='vendor/animate/animate.css') }}" rel="stylesheet" type="text/css">
+
+
+<link href="{{ url_for('static', filename='vendor/css-hamburgers/hamburgers.min.css') }}" rel="stylesheet" type="text/css">
+	
+
+<link href="{{ url_for('static', filename='css/util.css') }}" rel="stylesheet" type="text/css">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet" type="text/css">
+
+	<style>
+		body{
+			background: linear-gradient(180deg, #070a12, #0b1630);
+		}
+		.container-login100{
+			background:
+				radial-gradient(900px 420px at 50% 10%, rgba(69,214,255,.10), transparent 60%),
+				radial-gradient(820px 420px at 20% 0%, rgba(124,92,255,.14), transparent 62%),
+				linear-gradient(180deg, #070a12, #0b1630) !important;
+			position: relative;
+			overflow: hidden;
+		}
+		.container-login100::before{
+			content:"";
+			position:absolute;
+			inset:-40px;
+			background: linear-gradient(120deg, rgba(255,255,255,.05), transparent 40%, rgba(255,255,255,.03));
+			animation: floatBg 10s ease-in-out infinite alternate;
+			pointer-events:none;
+		}
+		@keyframes floatBg{
+			from{ transform: translateY(0) scale(1); }
+			to{ transform: translateY(-10px) scale(1.02); }
+		}
+		.wrap-login100{
+			background: rgba(0,0,0,.40) !important;
+			border: 1px solid rgba(255,255,255,.14);
+			backdrop-filter: blur(10px);
+			box-shadow: 0 20px 60px rgba(0,0,0,.45);
+			border-radius: 18px;
+		}
+
+		/* Keep logo image fully inside the circle */
+		.login100-form-logo{ overflow:hidden; }
+		.login100-form-logo img{
+			display:block;
+			width:100%;
+			height:100%;
+			object-fit: contain;
+		}
+
+		/* Make login button match site theme on hover */
+		.login100-form-btn{
+			background: linear-gradient(135deg, rgba(69,214,255,.18), rgba(124,92,255,.16)) !important;
+			border: 1px solid rgba(255,255,255,.18) !important;
+			color: rgba(10, 2, 40, 0.92) !important;
+			transition: transform .2s ease, box-shadow .2s ease, filter .2s ease, background .2s ease !important;
+			box-shadow: 0 10px 30px rgba(0,0,0,.25);
+		}
+		.login100-form-btn:hover{
+			background: linear-gradient(135deg, rgba(69,214,255,.28), rgba(124,92,255,.24)) !important;
+			transform: translateY(-2px);
+			filter: brightness(1.06);
+			box-shadow: 0 18px 60px rgba(0,0,0,.35);
+		}
+		.login100-form-btn:focus{
+			outline: none !important;
+			box-shadow: 0 0 0 4px rgba(69,214,255,.25), 0 18px 60px rgba(0,0,0,.35) !important;
+		}
+	</style>
+</head>
+<body>
+	
+	<div class="limiter">
+		<div class="container-login100">
+			<div class="wrap-login100">
+				<form class="login100-form validate-form" action="/login" method="POST">
+					<span class="login100-form-logo">
+						<img src="{{ url_for('static', filename='key-person-dark.png') }}" alt="Admin">
+					</span>
+
+					<span class="login100-form-title p-b-34 p-t-27">
+						Admin Login
+					</span>
+
+					<div class="wrap-input100 validate-input" data-validate = "Enter username">
+						<input class="input100" type="text" name="username" placeholder="Username" required>
+						<span class="focus-input100" data-placeholder="&#xf207;"></span>
+					</div>
+
+					<div class="wrap-input100 validate-input" data-validate="Enter password">
+						<input class="input100" type="password" name="password" placeholder="Password" required>
+						<span class="focus-input100" data-placeholder="&#xf191;"></span>
+					</div>
+
+					<div class="container-login100-form-btn">
+						<button class="login100-form-btn" type="submit">
+							Login
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+
+	<div id="dropDownSelect1"></div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+</html>

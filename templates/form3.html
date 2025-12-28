@@ -1,0 +1,108 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <title>Student Attendance Database</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    #page::before{
+        content: "";
+        position: absolute;
+        height: 100%;
+        z-index: -1;
+        width: 100%;
+        height: 100%;
+    }
+    #page { position: relative; }
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #070a12, #0b1630);
+      color: rgba(255,255,255,.92);
+    }
+    .container{
+      width: min(1100px, 96vw);
+      margin: 30px auto 0;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      padding: 18px 18px 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 1;
+    }
+    .text-center{ text-align:center; }
+
+    table.table{
+      width:100%;
+      border-collapse: collapse;
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.9);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    table.table thead th{
+      padding: 12px 12px;
+      font-weight: 800;
+      color: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    table.table td{
+      padding: 12px 12px;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .btn{
+      appearance:none;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      padding: 10px 16px;
+      background: linear-gradient(135deg, rgba(69,214,255,.18), rgba(124,92,255,.16));
+      color: rgba(255,255,255,.92);
+      font-weight: 800;
+      cursor:pointer;
+      transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+    .btn:focus{ outline:none; box-shadow: 0 0 0 4px rgba(69,214,255,.18), 0 10px 30px rgba(0,0,0,.25); }
+  </style>
+</head>  
+<body>  
+    <section id="page">
+    <div class="container">
+        <br><br><br>
+        <h1 class="text-center" style="color:rgb(255, 255, 255);"> <strong> Whole Database</strong></h1>
+        <br><br><br>
+        <h3 style="font-style:verdana; ">Student's full attendance record</h3>
+        <br><br>
+<table class="table table-bordered">  
+    <thead>  
+        <tr>
+            <th><strong>Name</strong></th>
+            <th><strong>Roll No</strong></th>
+            <th><strong>Time</strong></th>  
+            <th><strong>Date</strong></th>  
+        </tr>
+    </thead>    
+    {% for row in rows %}  
+        <tr>  
+            <td><strong>{{row["NAME"]}}</strong></td>
+            <td><strong>{{row["RollNo"]}}</strong></td>
+            <td><strong>{{row["Time"]}}</strong></td>  
+            <td><strong>{{row["Date"]}}</strong></td>  
+         
+        </tr>  
+      
+    {% endfor %}  
+</table>  
+<br><br>
+<form action="/" method="GET">
+<button class="btn" type="submit">Go back to home page</button>
+</form> 
+</div>
+</section>
+  
+</body>  
+</html>

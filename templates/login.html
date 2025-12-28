@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Face Attendance Management System</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      :root{
+        --bg:#070a12; --bg2:#0b1630;
+        --glass: rgba(255,255,255,.08);
+        --stroke: rgba(255,255,255,.14);
+        --text: rgba(255,255,255,.92);
+        --muted: rgba(255,255,255,.72);
+        --shadow: 0 20px 60px rgba(0,0,0,.45);
+        --r: 18px;
+      }
+      *{ box-sizing:border-box; }
+      body{
+        margin:0;
+        min-height:100vh;
+        color:var(--text);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background:
+          radial-gradient(1000px 500px at 10% 0%, rgba(124,92,255,.35), transparent 55%),
+          radial-gradient(900px 550px at 90% 20%, rgba(69,214,255,.25), transparent 60%),
+          linear-gradient(180deg, var(--bg), var(--bg2));
+        display:grid;
+        place-items:center;
+        padding: 90px 14px 24px;
+      }
+      .topbar{
+        position:fixed;
+        top:0; left:0; right:0;
+        padding: 14px 18px;
+        backdrop-filter: blur(14px);
+        background: rgba(0,0,0,.35);
+        border-bottom: 1px solid rgba(255,255,255,.10);
+      }
+      .topbar .brand{
+        display:flex; align-items:center; gap:10px;
+        color:var(--text);
+        text-decoration:none;
+        font-weight:800;
+        letter-spacing:.2px;
+      }
+      .topbar .brand-mark{
+        width:38px; height:38px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.14);
+        background:
+          radial-gradient(20px 20px at 30% 30%, rgba(69,214,255,.55), transparent 60%),
+          radial-gradient(24px 24px at 70% 70%, rgba(124,92,255,.55), transparent 62%),
+          rgba(255,255,255,.06);
+        box-shadow: 0 20px 60px rgba(0,0,0,.45);
+        flex: 0 0 auto;
+      }
+      .topbar img{ display:none; }
+      #cont{ width: min(520px, 92vw); }
+      #cont2{
+        border-radius: var(--r);
+        background: var(--glass);
+        border: 1px solid var(--stroke);
+        box-shadow: var(--shadow);
+        padding: 22px;
+        text-align:center;
+        animation: enterUp .6s ease both;
+      }
+      #cont2 h3{ margin: 6px 0 14px; font-weight: 900; }
+      #cont2 input[type="text"],
+      #cont2 input[type="password"]{
+        width: min(360px, 90%);
+        padding: 12px 12px;
+        border-radius: 12px;
+        background: rgba(0,0,0,.28);
+        border: 1px solid rgba(255,255,255,.14);
+        color: var(--text);
+        outline:none;
+      }
+      #cont2 input[type="text"]:focus,
+      #cont2 input[type="password"]:focus{
+        border-color: rgba(69,214,255,.55);
+        box-shadow: 0 0 0 4px rgba(69,214,255,.18);
+      }
+      #lgn_btn{
+        margin-top: 10px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: linear-gradient(135deg, rgba(69,214,255,.18), rgba(124,92,255,.16));
+        color: var(--text);
+        font-weight: 800;
+        cursor:pointer;
+        transition: transform .2s ease, filter .2s ease;
+      }
+      #lgn_btn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+      @keyframes enterUp{ from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:translateY(0)} }
+      @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Face Recognition Based Attendance System</span>
+        <span style="margin-left:auto;color:var(--muted);font-weight:600;">Made by SUDIPTA ROY</span>
+      </a>
+    </header>
+    <div class='container-fluid' id="cont">
+        <div class='bg-light card' id="cont2">
+            <br>
+            <h3> Login Here !!</h3>
+            <input type='text' id='username' placeholder="username" style="padding:5px 0px;margin:5px 0px;"> <br>
+
+            <input type='password' id='password' placeholder='password' style="padding:5px 0px;margin:5px 0px;"><br>
+            <input type='submit' id='lgn_btn' onclick="login()"> <br>
+
+
+        </div>
+    </div>
+
+</body>
+</html>

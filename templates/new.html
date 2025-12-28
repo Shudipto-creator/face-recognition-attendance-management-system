@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Face Recognition Based Attendance Management System</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  
+  <!-- Removed missing style1.css link -->
+
+  <style>
+    :root{
+      --bg0:#070a12;
+      --bg1:#0b1630;
+      --glass: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.72);
+      --brand: #45d6ff;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --r: 18px;
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html{ scroll-behavior:smooth; }
+    
+    body{
+      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 500px at 10% 0%, rgba(124,92,255,.35), transparent 55%),
+        radial-gradient(900px 550px at 90% 20%, rgba(69,214,255,.25), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    #navbar{
+      position:sticky;
+      top:0;
+      z-index:50;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 22px;
+      backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    
+    .brand{
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    #navbar ul{
+      display:flex;
+      gap:10px;
+      list-style:none;
+    }
+    
+    #navbar ul li a{
+      padding:8px 16px;
+      border-radius: 999px;
+      color:var(--text);
+      text-decoration:none;
+      transition: background .2s;
+    }
+    #navbar ul li a:hover{
+      background: var(--glass);
+    }
+
+    /* Form Container */
+    #contact-box{
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    form{
+      width: min(600px, 94vw);
+      background: rgba(0,0,0,.35);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      backdrop-filter: blur(10px);
+      animation: enterUp 0.6s ease both;
+    }
+
+    label{
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    input[type="text"]{
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.28);
+      border: 1px solid var(--stroke);
+      color: var (--text);
+      outline: none;
+      font-size: 1rem;
+    }
+    input[type="text"]:focus{
+      border-color: var(--brand);
+      box-shadow: 0 0 0 4px rgba(69,214,255,.18);
+    }
+
+    button{
+      width: 100%;
+      padding: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(135deg, rgba(69,214,255,.18), rgba(124,92,255,.16));
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: transform .2s;
+    }
+    button:hover{
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    h3{
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-top: 15px;
+      text-align: center;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    footer{
+      background: rgba(0, 0, 0, 0.55);
+      border-top: 1px solid var(--stroke);
+      color: var(--muted);
+      padding: 15px;
+      text-align: center;
+    }
+
+    @keyframes enterUp{
+      from{ opacity:0; transform: translateY(14px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <nav id="navbar">
+      <a href="/" class="brand">SR</a>
+      <ul>
+          <li class="item"><a href="/">Home</a></li>
+          <li class="item" ><a href="/how">Admin Login</a></li>
+      </ul>
+  </nav>
+
+  <div id="contact-box">
+      <form action="/name" method="POST">
+          <label for="name">Name:</label>
+          <input type="text" name="name1" id="name" placeholder="Enter Your Name" required>
+          
+          <label for="reg">Registration Id:</label>
+          <input type="text" name="name2" id="reg" placeholder="Enter Your Registration Number" required>
+          
+          <button type="submit" name="submit">Submit</button>
+          
+          <h3>Your webcam will open after pushing the submit button.</h3>
+          <h3>Press space to capture your image and escape to close the camera</h3>
+      </form>
+  </div>
+
+  <footer>
+      <div class="center">
+          copyright &copy; SUDIPTA ROY 2024. All rights reserved!
+      </div>
+  </footer>
+</body>
+</html>
