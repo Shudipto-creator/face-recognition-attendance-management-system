@@ -123,13 +123,13 @@ dmypy.json
 .pyre/
 
 # Project specific
-information.db
-attendance.csv
-cred.csv
-*.db
-*.csv
-logs/
-uploads/
+#information.db
+#attendance.csv
+#cred.csv
+#*.db
+#*.csv
+#logs/
+#uploads/
 
 # Face recognition specific
 Training images/*.jpg
