@@ -26,3 +26,4 @@ Jinja2
 MarkupSafe
 Werkzeug
 waitress
+reportlab

@@ -3,6 +3,7 @@ import json
 import sqlite3
 import csv
 from datetime import datetime, date
+from io import BytesIO
 from pathlib import Path
 from functools import wraps
 
@@ -10,8 +11,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import face_recognition
-from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
-
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify, send_file
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
 
@@ -366,6 +366,99 @@ def data():
         return render_template("form2.html", rows=rows)
 
     return render_template("form1.html")
+
+
+@app.route("/attendance/today/report.pdf", methods=["GET"])
+@login_required
+def download_todays_attendance_pdf():
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+    except ModuleNotFoundError:
+        flash("PDF export requires the 'reportlab' package. Install it with: pip install reportlab", "error")
+        return redirect(url_for("data"))
+
+    today = str(date.today())
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT NAME, RollNo, Time, Date FROM Attendance WHERE Date=? ORDER BY Time ASC",
+            (today,),
+        )
+        rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    margin_x = 40
+    y = height - 50
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(margin_x, y, "Today's Attendance Report")
+
+    y -= 22
+    c.setFont("Helvetica", 11)
+    c.drawString(margin_x, y, f"Date: {today}")
+
+    y -= 22
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(margin_x, y, "Name")
+    c.drawString(margin_x + 260, y, "Roll No")
+    c.drawString(margin_x + 360, y, "Time")
+
+    y -= 8
+    c.setLineWidth(0.7)
+    c.line(margin_x, y, width - margin_x, y)
+    y -= 16
+
+    c.setFont("Helvetica", 10)
+    if not rows:
+        c.drawString(margin_x, y, "No attendance records found for today.")
+    else:
+        for r in rows:
+            name = str(r["NAME"] or "")
+            roll = str(r["RollNo"] or "")
+            tm = str(r["Time"] or "")
+
+            if y < 60:
+                c.showPage()
+                y = height - 50
+                c.setFont("Helvetica-Bold", 16)
+                c.drawString(margin_x, y, "Today's Attendance Report")
+                y -= 22
+                c.setFont("Helvetica", 11)
+                c.drawString(margin_x, y, f"Date: {today}")
+                y -= 22
+                c.setFont("Helvetica-Bold", 10)
+                c.drawString(margin_x, y, "Name")
+                c.drawString(margin_x + 260, y, "Roll No")
+                c.drawString(margin_x + 360, y, "Time")
+                y -= 8
+                c.setLineWidth(0.7)
+                c.line(margin_x, y, width - margin_x, y)
+                y -= 16
+                c.setFont("Helvetica", 10)
+
+            c.drawString(margin_x, y, name[:45])
+            c.drawString(margin_x + 260, y, roll[:18])
+            c.drawString(margin_x + 360, y, tm[:10])
+            y -= 14
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    filename = f"attendance_{today}.pdf"
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/pdf",
+    )
 
 
 @app.route("/whole", methods=["GET", "POST"])
