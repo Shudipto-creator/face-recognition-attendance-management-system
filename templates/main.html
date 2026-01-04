@@ -234,11 +234,73 @@
       <form action="/new" method="GET" style="display:inline-block;margin:0;">
         <button type="submit" class="btn btn-primary btn-large">Register New Student</button>
       </form>
-      <form action="#" method="post" style="display:inline-block;margin:0;">
-        <button type="submit" class="btn btn-primary btn-large">Punch your Attendance</button>
+      <form action="/" method="post" style="display:inline-block;margin:0; min-width: min(720px, 94vw);">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items:end; width:100%;">
+          <div style="text-align:left;">
+            <label for="department_id" style="display:block; font-size:.9rem; color: rgba(255,255,255,.78); margin: 0 0 6px;">School</label>
+            <select id="department_id" name="department_id" required style="width:100%; padding: 12px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: rgba(255,255,255,.92);">
+              <option value="" disabled selected>Select School</option>
+              {% for d in departments %}
+                <option value="{{ d["Id"] }}">{{ d["Name"] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="text-align:left;">
+            <label for="major_id" style="display:block; font-size:.9rem; color: rgba(255,255,255,.78); margin: 0 0 6px;">Major</label>
+            <select id="major_id" name="major_id" required style="width:100%; padding: 12px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: rgba(255,255,255,.92);">
+              <option value="" disabled selected>Select Major</option>
+              {% for m in majors %}
+                <option value="{{ m["Id"] }}" data-school="{{ m["DepartmentId"] }}">{{ m["DepartmentName"] }} — {{ m["Name"] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="text-align:left;">
+            <label for="course_id" style="display:block; font-size:.9rem; color: rgba(255,255,255,.78); margin: 0 0 6px;">Course</label>
+            <select id="course_id" name="course_id" required style="width:100%; padding: 12px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: rgba(255,255,255,.92);">
+              <option value="" disabled selected>Select Course</option>
+              {% for c in courses %}
+                <option value="{{ c["Id"] }}" data-school="{{ c["DepartmentId"] }}" data-major="{{ c["MajorId"] }}">{{ c["DepartmentName"] }} — {{ c["MajorName"] }} — {{ c["Name"] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-large">Punch your Attendance</button>
+        </div>
       </form>
     </div>
   </div>
 </section>
+<script>
+  (function(){
+    var dept = document.getElementById('department_id');
+    var major = document.getElementById('major_id');
+    var course = document.getElementById('course_id');
+    if(!dept || !major || !course) return;
+
+    function filterMajors(){
+      var schoolId = dept.value;
+      var opts = major.querySelectorAll('option[data-school]');
+      opts.forEach(function(o){
+        o.style.display = (!schoolId || o.getAttribute('data-school') === schoolId) ? '' : 'none';
+      });
+      major.value = '';
+      filterCourses();
+    }
+
+    function filterCourses(){
+      var schoolId = dept.value;
+      var majorId = major.value;
+      var opts = course.querySelectorAll('option[data-school]');
+      opts.forEach(function(o){
+        var okSchool = (!schoolId || o.getAttribute('data-school') === schoolId);
+        var okMajor = (!majorId || o.getAttribute('data-major') === majorId);
+        o.style.display = (okSchool && okMajor) ? '' : 'none';
+      });
+      course.value = '';
+    }
+
+    dept.addEventListener('change', filterMajors);
+    major.addEventListener('change', filterCourses);
+  })();
+</script>
 </body>
 </html>

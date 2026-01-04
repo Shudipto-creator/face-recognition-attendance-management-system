@@ -171,6 +171,30 @@
 
   <div id="contact-box">
       <form action="/name" method="POST">
+          <label for="department_id">School:</label>
+          <select name="department_id" id="department_id" required style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 12px; background: rgba(255, 255, 255, 0.28); border: 1px solid var(--stroke); color: rgba(255,255,255,.92); outline: none; font-size: 1rem;">
+              <option value="" disabled selected>Select School</option>
+              {% for d in departments %}
+                <option value="{{ d["Id"] }}">{{ d["Name"] }}</option>
+              {% endfor %}
+          </select>
+
+          <label for="major_id">Major:</label>
+          <select name="major_id" id="major_id" required style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 12px; background: rgba(255, 255, 255, 0.28); border: 1px solid var(--stroke); color: rgba(255,255,255,.92); outline: none; font-size: 1rem;">
+              <option value="" disabled selected>Select Major</option>
+              {% for m in majors %}
+                <option value="{{ m["Id"] }}" data-school="{{ m["DepartmentId"] }}">{{ m["DepartmentName"] }} — {{ m["Name"] }}</option>
+              {% endfor %}
+          </select>
+
+          <label for="course_id">Course:</label>
+          <select name="course_id" id="course_id" required style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 12px; background: rgba(255, 255, 255, 0.28); border: 1px solid var(--stroke); color: rgba(255,255,255,.92); outline: none; font-size: 1rem;">
+              <option value="" disabled selected>Select Course</option>
+              {% for c in courses %}
+                <option value="{{ c["Id"] }}" data-school="{{ c["DepartmentId"] }}" data-major="{{ c["MajorId"] }}">{{ c["DepartmentName"] }} — {{ c["MajorName"] }} — {{ c["Name"] }}</option>
+              {% endfor %}
+          </select>
+
           <label for="name">Name:</label>
           <input type="text" name="name1" id="name" placeholder="Enter Your Name" required>
           
@@ -189,5 +213,38 @@
           copyright &copy; SUDIPTA ROY 2024. All rights reserved!
       </div>
   </footer>
+  <script>
+    (function(){
+      var dept = document.getElementById('department_id');
+      var major = document.getElementById('major_id');
+      var course = document.getElementById('course_id');
+      if(!dept || !major || !course) return;
+
+      function filterMajors(){
+        var schoolId = dept.value;
+        var opts = major.querySelectorAll('option[data-school]');
+        opts.forEach(function(o){
+          o.style.display = (!schoolId || o.getAttribute('data-school') === schoolId) ? '' : 'none';
+        });
+        major.value = '';
+        filterCourses();
+      }
+
+      function filterCourses(){
+        var schoolId = dept.value;
+        var majorId = major.value;
+        var opts = course.querySelectorAll('option[data-school]');
+        opts.forEach(function(o){
+          var okSchool = (!schoolId || o.getAttribute('data-school') === schoolId);
+          var okMajor = (!majorId || o.getAttribute('data-major') === majorId);
+          o.style.display = (okSchool && okMajor) ? '' : 'none';
+        });
+        course.value = '';
+      }
+
+      dept.addEventListener('change', filterMajors);
+      major.addEventListener('change', filterCourses);
+    })();
+  </script>
 </body>
 </html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>School, Major & Course Catalog</title>
+  <style>
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #070a12, #0b1630);
+      color: rgba(255,255,255,.92);
+    }
+    #page::before{
+      content: "";
+      position: absolute;
+      background: radial-gradient(900px 420px at 50% 0%, rgba(69,214,255,.10), transparent 60%);
+      opacity: 1;
+      height: 100%;
+      z-index: -1;
+      width: 100%;
+    }
+    #page { position: relative; }
+    .container{
+      width: min(1100px, 96vw);
+      margin: 30px auto 0;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      padding: 18px 18px 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 1;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    h1{ margin: 4px 0 12px; }
+    h2{ margin: 0 0 12px; font-size: 1.1rem; }
+    .card{
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    label{
+      display:block;
+      margin: 0 0 6px 0;
+      color: rgba(255,255,255,.78);
+      font-weight: 700;
+    }
+    input, select{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.20);
+      color: rgba(255,255,255,.92);
+      margin-bottom: 10px;
+      outline: none;
+    }
+    table.table{
+      width:100%;
+      border-collapse: collapse;
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.9);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    table.table thead th{
+      font-weight: 800;
+      color: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 12px 12px;
+      text-align: left;
+    }
+    table.table td{
+      padding: 12px 12px;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .btn{
+      appearance:none;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      padding: 10px 16px;
+      background: linear-gradient(135deg, rgba(69,214,255,.18), rgba(124,92,255,.16));
+      color: rgba(255,255,255,.92);
+      font-weight: 800;
+      cursor:pointer;
+      transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+    .btn:focus{ outline:none; box-shadow: 0 0 0 4px rgba(69,214,255,.18), 0 10px 30px rgba(0,0,0,.25); }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <section id="page">
+    <div class="container">
+      <h1><strong>School, Major & Course Catalog</strong></h1>
+      <div class="row" style="margin: 0 0 14px 0;">
+        <form action="/dashboard" method="get" style="margin:0;">
+          <button class="btn" type="submit">Back to Dashboard</button>
+        </form>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2><strong>Create School</strong></h2>
+          <form action="/catalog/departments" method="post">
+            <label for="dept_name">School Name</label>
+            <input id="dept_name" name="name" type="text" placeholder="e.g. CSE" required>
+            <button class="btn" type="submit">Create School</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2><strong>Create Major</strong></h2>
+          <form action="/catalog/majors" method="post">
+            <label for="major_school">School</label>
+            <select id="major_school" name="department_id" required>
+              <option value="" disabled selected>Select School</option>
+              {% for d in departments %}
+                <option value="{{ d["Id"] }}">{{ d["Name"] }}</option>
+              {% endfor %}
+            </select>
+            <label for="major_name">Major Name</label>
+            <input id="major_name" name="name" type="text" placeholder="e.g. Computer Science" required>
+            <button class="btn" type="submit">Create Major</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top: 14px;">
+        <div class="card">
+          <h2><strong>Create Course</strong></h2>
+          <form action="/catalog/courses" method="post">
+            <label for="course_school">School</label>
+            <select id="course_school" required>
+              <option value="" disabled selected>Select School</option>
+              {% for d in departments %}
+                <option value="{{ d["Id"] }}">{{ d["Name"] }}</option>
+              {% endfor %}
+            </select>
+            <label for="course_major">Major</label>
+            <select id="course_major" name="major_id" required>
+              <option value="" disabled selected>Select Major</option>
+              {% for m in majors %}
+                <option value="{{ m["Id"] }}" data-school="{{ m["DepartmentId"] }}">{{ m["DepartmentName"] }} — {{ m["Name"] }}</option>
+              {% endfor %}
+            </select>
+            <label for="course_name">Course Name</label>
+            <input id="course_name" name="name" type="text" placeholder="e.g. Data Structures" required>
+            <button class="btn" type="submit">Create Course</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2><strong>Majors</strong></h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>School</th>
+                <th>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in majors %}
+                <tr>
+                  <td>{{ m["Id"] }}</td>
+                  <td>{{ m["DepartmentName"] }}</td>
+                  <td>{{ m["Name"] }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top: 14px;">
+        <div class="card">
+          <h2><strong>Schools</strong></h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in departments %}
+                <tr>
+                  <td>{{ d["Id"] }}</td>
+                  <td>{{ d["Name"] }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h2><strong>Courses</strong></h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>School</th>
+                <th>Major</th>
+                <th>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in courses %}
+                <tr>
+                  <td>{{ c["Id"] }}</td>
+                  <td>{{ c["DepartmentName"] }}</td>
+                  <td>{{ c["MajorName"] }}</td>
+                  <td>{{ c["Name"] }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+<script>
+  (function(){
+    var school = document.getElementById('course_school');
+    var major = document.getElementById('course_major');
+    if(!school || !major) return;
+
+    function filterMajors(){
+      var schoolId = school.value;
+      var opts = major.querySelectorAll('option[data-school]');
+      opts.forEach(function(o){
+        o.style.display = (!schoolId || o.getAttribute('data-school') === schoolId) ? '' : 'none';
+      });
+      major.value = '';
+    }
+
+    school.addEventListener('change', filterMajors);
+  })();
+</script>
+</body>
+</html>
