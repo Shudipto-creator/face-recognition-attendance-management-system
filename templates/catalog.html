@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>School, Major & Course Catalog</title>
   <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
     body{
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background: linear-gradient(180deg, #070a12, #0b1630);
@@ -26,28 +29,28 @@
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.14);
       border-radius: 18px;
-      padding: 18px 18px 8px;
+      padding: 24px 24px 24px;
       box-shadow: 0 20px 60px rgba(0,0,0,.45);
       backdrop-filter: blur(10px);
       position: relative;
       z-index: 1;
     }
     .grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 16px;
     }
     @media (max-width: 860px){
       .grid{ grid-template-columns: 1fr; }
     }
     h1{ margin: 4px 0 12px; }
     h2{ margin: 0 0 12px; font-size: 1.1rem; }
-    .card{
-      background: rgba(0,0,0,.22);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 14px;
-      padding: 14px;
+    .card{ 
+      background: rgba(255,255,255,.06); border-radius: 12px; padding: 16px; 
+      border: 1px solid rgba(255,255,255,.12); box-shadow: 0 4px 12px rgba(0,0,0,.15); 
+      box-sizing: border-box;
     }
+    .card h2{ margin: 0 0 12px 0; font-size: 1.25rem; color: #45d6ff; }
     label{
       display:block;
       margin: 0 0 6px 0;
@@ -99,15 +102,34 @@
     .btn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
     .btn:focus{ outline:none; box-shadow: 0 0 0 4px rgba(69,214,255,.18), 0 10px 30px rgba(0,0,0,.25); }
     .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn-delete{ background: #dc3545; color: white; padding: 6px 12px; border-radius: 6px; font-size: .85rem; border: none; cursor: pointer; }
+    .btn-delete:hover{ background: #c82333; }
+    .flash-messages{ margin: 0 0 20px 0; }
+    .flash{ padding: 12px 16px; border-radius: 8px; margin: 0 0 10px 0; }
+    .flash.success{ background: rgba(40,167,69,.2); border: 1px solid rgba(40,167,69,.4); color: #28a745; }
+    .flash.error{ background: rgba(220,53,69,.2); border: 1px solid rgba(220,53,69,.4); color: #dc3545; }
   </style>
 </head>
 <body>
   <section id="page">
     <div class="container">
       <h1><strong>School, Major & Course Catalog</strong></h1>
+      {% if flashed_messages %}
+        <div class="flash-messages">
+          {% for category, message in flashed_messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
       <div class="row" style="margin: 0 0 14px 0;">
         <form action="/dashboard" method="get" style="margin:0;">
           <button class="btn" type="submit">Back to Dashboard</button>
+        </form>
+        <form action="/students" method="get" style="margin:0;">
+          <button class="btn" type="submit">Manage Students</button>
+        </form>
+        <form action="/attendance" method="get" style="margin:0;">
+          <button class="btn" type="submit">Manage Attendance</button>
         </form>
       </div>
 
@@ -170,6 +192,7 @@
                 <th>Id</th>
                 <th>School</th>
                 <th>Name</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -178,6 +201,11 @@
                   <td>{{ m["Id"] }}</td>
                   <td>{{ m["DepartmentName"] }}</td>
                   <td>{{ m["Name"] }}</td>
+                  <td>
+                    <form action="/catalog/majors/{{ m['Id'] }}/delete" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this major? This action cannot be undone.')">
+                      <button type="submit" class="btn-delete">Delete</button>
+                    </form>
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -193,6 +221,7 @@
               <tr>
                 <th>Id</th>
                 <th>Name</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -200,6 +229,11 @@
                 <tr>
                   <td>{{ d["Id"] }}</td>
                   <td>{{ d["Name"] }}</td>
+                  <td>
+                    <form action="/catalog/departments/{{ d['Id'] }}/delete" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this school? This action cannot be undone.')">
+                      <button type="submit" class="btn-delete">Delete</button>
+                    </form>
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -215,6 +249,7 @@
                 <th>School</th>
                 <th>Major</th>
                 <th>Name</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -224,6 +259,11 @@
                   <td>{{ c["DepartmentName"] }}</td>
                   <td>{{ c["MajorName"] }}</td>
                   <td>{{ c["Name"] }}</td>
+                  <td>
+                    <form action="/catalog/courses/{{ c['Id'] }}/delete" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this course? This action cannot be undone.')">
+                      <button type="submit" class="btn-delete">Delete</button>
+                    </form>
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>

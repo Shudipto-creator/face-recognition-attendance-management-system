@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import face_recognition
-from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify, send_file
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify, send_file, get_flashed_messages
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
 
@@ -934,7 +934,8 @@ def catalog():
         courses = list_courses(conn)
     finally:
         conn.close()
-    return render_template("catalog.html", departments=departments, majors=majors, courses=courses)
+    return render_template("catalog.html", departments=departments, majors=majors, courses=courses, 
+                          flashed_messages=get_flashed_messages(with_categories=True))
 
 
 @app.route("/catalog/departments", methods=["POST"])
@@ -1011,6 +1012,201 @@ def create_major():
     finally:
         conn.close()
     return redirect(url_for("catalog"))
+
+
+@app.route("/catalog/departments/<int:department_id>/delete", methods=["POST"])
+@login_required
+def delete_department(department_id):
+    conn = connect_db()
+    try:
+        # Check if department exists
+        dept = conn.execute("SELECT Id FROM Departments WHERE Id=?", (department_id,)).fetchone()
+        if not dept:
+            flash("School not found.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Check if department has majors
+        majors_count = conn.execute("SELECT COUNT(*) FROM Majors WHERE DepartmentId=?", (department_id,)).fetchone()[0]
+        if majors_count > 0:
+            flash(f"Cannot delete school: {majors_count} major(s) are associated with this school.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Check if department has students (through enrollments)
+        students_count = conn.execute("""
+            SELECT COUNT(*) FROM Enrollments e 
+            JOIN Courses c ON c.Id = e.CourseId 
+            JOIN Majors m ON m.Id = c.MajorId 
+            WHERE m.DepartmentId = ?
+        """, (department_id,)).fetchone()[0]
+        if students_count > 0:
+            flash(f"Cannot delete school: {students_count} student(s) are enrolled in courses under this school.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Delete department
+        conn.execute("DELETE FROM Departments WHERE Id=?", (department_id,))
+        conn.commit()
+        flash("School deleted successfully.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("catalog"))
+
+
+@app.route("/catalog/majors/<int:major_id>/delete", methods=["POST"])
+@login_required
+def delete_major(major_id):
+    conn = connect_db()
+    try:
+        # Check if major exists
+        major = conn.execute("SELECT Id FROM Majors WHERE Id=?", (major_id,)).fetchone()
+        if not major:
+            flash("Major not found.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Check if major has courses
+        courses_count = conn.execute("SELECT COUNT(*) FROM Courses WHERE MajorId=?", (major_id,)).fetchone()[0]
+        if courses_count > 0:
+            flash(f"Cannot delete major: {courses_count} course(s) are associated with this major.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Check if major has students (through enrollments)
+        students_count = conn.execute("""
+            SELECT COUNT(*) FROM Enrollments e 
+            JOIN Courses c ON c.Id = e.CourseId 
+            WHERE c.MajorId = ?
+        """, (major_id,)).fetchone()[0]
+        if students_count > 0:
+            flash(f"Cannot delete major: {students_count} student(s) are enrolled in courses under this major.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Delete major
+        conn.execute("DELETE FROM Majors WHERE Id=?", (major_id,))
+        conn.commit()
+        flash("Major deleted successfully.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("catalog"))
+
+
+@app.route("/catalog/courses/<int:course_id>/delete", methods=["POST"])
+@login_required
+def delete_course(course_id):
+    conn = connect_db()
+    try:
+        # Check if course exists
+        course = conn.execute("SELECT Id FROM Courses WHERE Id=?", (course_id,)).fetchone()
+        if not course:
+            flash("Course not found.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Check if course has students (through enrollments)
+        students_count = conn.execute("SELECT COUNT(*) FROM Enrollments WHERE CourseId=?", (course_id,)).fetchone()[0]
+        if students_count > 0:
+            flash(f"Cannot delete course: {students_count} student(s) are enrolled in this course.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Check if course has attendance records
+        attendance_count = conn.execute("SELECT COUNT(*) FROM AttendanceV2 WHERE CourseId=?", (course_id,)).fetchone()[0]
+        if attendance_count > 0:
+            flash(f"Cannot delete course: {attendance_count} attendance record(s) are associated with this course.", "error")
+            return redirect(url_for("catalog"))
+        
+        # Delete course
+        conn.execute("DELETE FROM Courses WHERE Id=?", (course_id,))
+        conn.commit()
+        flash("Course deleted successfully.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("catalog"))
+
+
+@app.route("/students", methods=["GET"])
+@login_required
+def manage_students():
+    conn = connect_db()
+    try:
+        # Get all students with their enrollments
+        students = conn.execute("""
+            SELECT s.Id, s.Name, s.RollNo,
+                   d.Name AS DepartmentName,
+                   m.Name AS MajorName,
+                   c.Name AS CourseName,
+                   e.CourseId,
+                   e.StudentId
+            FROM StudentsV2 s
+            JOIN Enrollments e ON e.StudentId = s.Id
+            JOIN Courses c ON c.Id = e.CourseId
+            JOIN Departments d ON d.Id = s.DepartmentId
+            LEFT JOIN Majors m ON m.Id = c.MajorId
+            ORDER BY d.Name, m.Name, c.Name, s.Name
+        """).fetchall()
+        
+        departments = list_departments(conn)
+        majors = list_majors(conn)
+        courses = list_courses(conn)
+    finally:
+        conn.close()
+    
+    return render_template("students.html", students=students, departments=departments, majors=majors, courses=courses,
+                          flashed_messages=get_flashed_messages(with_categories=True))
+
+
+@app.route("/students/enrollment/<int:student_id>/<int:course_id>/delete", methods=["POST"])
+@login_required
+def delete_enrollment(student_id, course_id):
+    conn = connect_db()
+    try:
+        # Delete enrollment
+        conn.execute("DELETE FROM Enrollments WHERE StudentId=? AND CourseId=?", (student_id, course_id))
+        conn.commit()
+        flash("Student unenrolled from course successfully.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("manage_students"))
+
+
+@app.route("/attendance", methods=["GET"])
+@login_required
+def manage_attendance():
+    conn = connect_db()
+    try:
+        # Get all attendance records with student and course info
+        attendance = conn.execute("""
+            SELECT a.Id, a.Time, a.Date,
+                   s.Name AS StudentName, s.RollNo,
+                   d.Name AS DepartmentName,
+                   m.Name AS MajorName,
+                   c.Name AS CourseName,
+                   a.CourseId
+            FROM AttendanceV2 a
+            JOIN StudentsV2 s ON s.Id = a.StudentId
+            JOIN Courses c ON c.Id = a.CourseId
+            JOIN Departments d ON d.Id = s.DepartmentId
+            LEFT JOIN Majors m ON m.Id = c.MajorId
+            ORDER BY a.Date DESC, a.Time DESC
+        """).fetchall()
+        
+        departments = list_departments(conn)
+        majors = list_majors(conn)
+        courses = list_courses(conn)
+    finally:
+        conn.close()
+    
+    return render_template("attendance.html", attendance=attendance, departments=departments, majors=majors, courses=courses,
+                          flashed_messages=get_flashed_messages(with_categories=True))
+
+
+@app.route("/attendance/<int:attendance_id>/delete", methods=["POST"])
+@login_required
+def delete_attendance(attendance_id):
+    conn = connect_db()
+    try:
+        # Delete attendance record
+        conn.execute("DELETE FROM AttendanceV2 WHERE Id=?", (attendance_id,))
+        conn.commit()
+        flash("Attendance record deleted successfully.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("manage_attendance"))
 
 
 if __name__ == "__main__":
