@@ -13,6 +13,15 @@ import numpy as np
 import pandas as pd
 import face_recognition
 from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify, send_file, get_flashed_messages
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+
+plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
+plt.rcParams['axes.unicode_minus'] = False
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
 
@@ -56,7 +65,6 @@ def ensure_files():
     if not ATTENDANCE_CSV.exists():
         ATTENDANCE_CSV.write_text("Name,Roll,Time\n", encoding="utf-8")
     
-    # Ensure cred.csv exists - credentials should be set up manually
     if not CRED_CSV.exists():
         with open(CRED_CSV, 'w', encoding='utf-8') as f:
             f.write("username,password\n")
@@ -173,7 +181,6 @@ def ensure_db():
                 (dept_id, major_id, course_name, course_slug),
             )
 
-        # Ensure each School (Departments) has at least one default Major and bind legacy courses
         dept_rows = conn.execute("SELECT Id FROM Departments").fetchall()
         for d in dept_rows:
             dept_id = int(d["Id"])
@@ -249,7 +256,6 @@ ensure_files()
 ensure_db()
 
 
-# --- DECORATORS ---
 def login_required(f):
     """
     A decorator to ensure the user is logged in before accessing a route.
@@ -564,18 +570,30 @@ def recognize():
         try:
             sid = int(student_id_str)
         except ValueError:
-            return
+            return False
         now = datetime.now()
         tm = now.strftime("%H:%M")
         today = str(date.today())
 
         conn = connect_db()
         try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*) as count FROM AttendanceV2 WHERE StudentId=? AND CourseId=? AND Date=?",
+                (sid, course_id, today)
+            )
+            existing = cur.fetchone()[0]
+
+            if existing > 0:
+                return False
+
             conn.execute(
                 "INSERT OR IGNORE INTO AttendanceV2 (StudentId, CourseId, Time, Date) VALUES (?, ?, ?, ?)",
                 (sid, course_id, tm, today),
             )
             conn.commit()
+            print(f"✓ Attendance marked for student {sid} at {tm}")
+            return True
         finally:
             conn.close()
 
@@ -583,7 +601,7 @@ def recognize():
         try:
             sid = int(student_id_str)
         except ValueError:
-            return
+            return False
         ensure_files()
         conn = connect_db()
         try:
@@ -591,16 +609,31 @@ def recognize():
         finally:
             conn.close()
         if not st:
-            return
+            return False
         person_name = norm_name(str(st["Name"]))
         roll = str(st["RollNo"] or "")
-        tm = datetime.now().strftime("%H:%M")
-        with ATTENDANCE_CSV.open("a", encoding="utf-8") as f:
-            f.write(f"{person_name},{roll},{tm}\n")
+
+        with ATTENDANCE_CSV.open("r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+
+        existing_names = set()
+        for line in lines[1:]:
+            parts = [p.strip() for p in line.strip().split(",")]
+            if parts and parts[0]:
+                existing_names.add(parts[0])
+
+        if person_name not in existing_names:
+            tm = datetime.now().strftime("%H:%M")
+            with ATTENDANCE_CSV.open("a", encoding="utf-8") as f:
+                f.write(f"{person_name},{roll},{tm}\n")
+            return True
+        return False
 
     encodeListKnown, validNames = findEncodings(images)
     if not encodeListKnown:
         return "No encodable faces found in training images.", 500
+
+    marked_today = set()
 
     cap = cv2.VideoCapture(0)
     try:
@@ -621,8 +654,13 @@ def recognize():
 
                 if faceDis[matchIndex] < 0.50:
                     student_id_str = validNames[matchIndex]
-                    markAttendanceCSV(student_id_str)
-                    markData(student_id_str)
+
+                    if student_id_str not in marked_today:
+                        success_db = markData(student_id_str)
+                        success_csv = markAttendanceCSV(student_id_str)
+
+                        if success_db or success_csv:
+                            marked_today.add(student_id_str)
 
                     conn = connect_db()
                     try:
@@ -631,6 +669,8 @@ def recognize():
                         conn.close()
 
                     display_name = str(st["Name"]) if st else "Unknown"
+                    if student_id_str in marked_today:
+                        display_name = f"{display_name} ✓"
                 else:
                     display_name = "Unknown"
 
@@ -653,11 +693,9 @@ def recognize():
 
 @app.route("/login", methods=["POST"])
 def login():
-    # 1. Try getting data from Form (Browser)
     input_user = request.form.get("username", "").strip().lower()
     input_pass = request.form.get("password", "").strip()
 
-    # 2. If empty, try getting data from JSON (API/JS)
     if not input_user:
         try:
             json_data = request.get_json(force=True, silent=True)
@@ -670,13 +708,11 @@ def login():
     print(f"DEBUG: Attempting login for '{input_user}'")
 
     if not input_user or not input_pass:
-        # If accessed via browser, show error
         if request.form:
             flash("Missing username or password", "error")
             return redirect(url_for("how"))
         return "failed"
 
-    # Hardcoded emergency fallback
     if not CRED_CSV.exists():
         if request.form:
             flash("Credential file missing", "error")
@@ -686,7 +722,6 @@ def login():
     try:
         with open(CRED_CSV, mode='r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
-            # Normalize headers
             if reader.fieldnames:
                 reader.fieldnames = [fn.strip().lower() for fn in reader.fieldnames]
 
@@ -702,7 +737,6 @@ def login():
     except Exception as e:
         print(f"DEBUG: CSV Error: {e}")
 
-    # Login failed
     if request.form:
         flash("Invalid Username or Password", "error")
         return redirect(url_for("how"))
@@ -1019,19 +1053,16 @@ def create_major():
 def delete_department(department_id):
     conn = connect_db()
     try:
-        # Check if department exists
         dept = conn.execute("SELECT Id FROM Departments WHERE Id=?", (department_id,)).fetchone()
         if not dept:
             flash("School not found.", "error")
             return redirect(url_for("catalog"))
         
-        # Check if department has majors
         majors_count = conn.execute("SELECT COUNT(*) FROM Majors WHERE DepartmentId=?", (department_id,)).fetchone()[0]
         if majors_count > 0:
             flash(f"Cannot delete school: {majors_count} major(s) are associated with this school.", "error")
             return redirect(url_for("catalog"))
         
-        # Check if department has students (through enrollments)
         students_count = conn.execute("""
             SELECT COUNT(*) FROM Enrollments e 
             JOIN Courses c ON c.Id = e.CourseId 
@@ -1042,7 +1073,6 @@ def delete_department(department_id):
             flash(f"Cannot delete school: {students_count} student(s) are enrolled in courses under this school.", "error")
             return redirect(url_for("catalog"))
         
-        # Delete department
         conn.execute("DELETE FROM Departments WHERE Id=?", (department_id,))
         conn.commit()
         flash("School deleted successfully.", "success")
@@ -1056,19 +1086,16 @@ def delete_department(department_id):
 def delete_major(major_id):
     conn = connect_db()
     try:
-        # Check if major exists
         major = conn.execute("SELECT Id FROM Majors WHERE Id=?", (major_id,)).fetchone()
         if not major:
             flash("Major not found.", "error")
             return redirect(url_for("catalog"))
         
-        # Check if major has courses
         courses_count = conn.execute("SELECT COUNT(*) FROM Courses WHERE MajorId=?", (major_id,)).fetchone()[0]
         if courses_count > 0:
             flash(f"Cannot delete major: {courses_count} course(s) are associated with this major.", "error")
             return redirect(url_for("catalog"))
         
-        # Check if major has students (through enrollments)
         students_count = conn.execute("""
             SELECT COUNT(*) FROM Enrollments e 
             JOIN Courses c ON c.Id = e.CourseId 
@@ -1078,7 +1105,6 @@ def delete_major(major_id):
             flash(f"Cannot delete major: {students_count} student(s) are enrolled in courses under this major.", "error")
             return redirect(url_for("catalog"))
         
-        # Delete major
         conn.execute("DELETE FROM Majors WHERE Id=?", (major_id,))
         conn.commit()
         flash("Major deleted successfully.", "success")
@@ -1092,25 +1118,21 @@ def delete_major(major_id):
 def delete_course(course_id):
     conn = connect_db()
     try:
-        # Check if course exists
         course = conn.execute("SELECT Id FROM Courses WHERE Id=?", (course_id,)).fetchone()
         if not course:
             flash("Course not found.", "error")
             return redirect(url_for("catalog"))
         
-        # Check if course has students (through enrollments)
         students_count = conn.execute("SELECT COUNT(*) FROM Enrollments WHERE CourseId=?", (course_id,)).fetchone()[0]
         if students_count > 0:
             flash(f"Cannot delete course: {students_count} student(s) are enrolled in this course.", "error")
             return redirect(url_for("catalog"))
         
-        # Check if course has attendance records
         attendance_count = conn.execute("SELECT COUNT(*) FROM AttendanceV2 WHERE CourseId=?", (course_id,)).fetchone()[0]
         if attendance_count > 0:
             flash(f"Cannot delete course: {attendance_count} attendance record(s) are associated with this course.", "error")
             return redirect(url_for("catalog"))
         
-        # Delete course
         conn.execute("DELETE FROM Courses WHERE Id=?", (course_id,))
         conn.commit()
         flash("Course deleted successfully.", "success")
@@ -1124,7 +1146,6 @@ def delete_course(course_id):
 def manage_students():
     conn = connect_db()
     try:
-        # Get all students with their enrollments
         students = conn.execute("""
             SELECT s.Id, s.Name, s.RollNo,
                    d.Name AS DepartmentName,
@@ -1155,7 +1176,6 @@ def manage_students():
 def delete_enrollment(student_id, course_id):
     conn = connect_db()
     try:
-        # Delete enrollment
         conn.execute("DELETE FROM Enrollments WHERE StudentId=? AND CourseId=?", (student_id, course_id))
         conn.commit()
         flash("Student unenrolled from course successfully.", "success")
@@ -1169,7 +1189,6 @@ def delete_enrollment(student_id, course_id):
 def manage_attendance():
     conn = connect_db()
     try:
-        # Get all attendance records with student and course info
         attendance = conn.execute("""
             SELECT a.Id, a.Time, a.Date,
                    s.Name AS StudentName, s.RollNo,
@@ -1200,13 +1219,178 @@ def manage_attendance():
 def delete_attendance(attendance_id):
     conn = connect_db()
     try:
-        # Delete attendance record
         conn.execute("DELETE FROM AttendanceV2 WHERE Id=?", (attendance_id,))
         conn.commit()
         flash("Attendance record deleted successfully.", "success")
     finally:
         conn.close()
     return redirect(url_for("manage_attendance"))
+
+
+@app.route("/generate-chart", methods=["GET"])
+@login_required
+def generate_chart():
+    """Generate attendance statistics bar chart (by days, deduplicated)"""
+    conn = connect_db()
+    try:
+        cur = conn.cursor()
+
+        cur.execute("SELECT Name FROM Students")
+        all_students = [row['Name'] for row in cur.fetchall()]
+
+        student_attendance = {name: 0 for name in all_students}
+
+        cur.execute("""
+                    SELECT NAME, COUNT(DISTINCT Date) as days
+                    FROM Attendance
+                    GROUP BY NAME
+                    """)
+
+        for record in cur.fetchall():
+            name = record['NAME']
+            if name in student_attendance:
+                student_attendance[name] = record['days']
+
+    finally:
+        conn.close()
+
+    if not student_attendance or sum(student_attendance.values()) == 0:
+        flash("No attendance data available", "error")
+        return redirect(url_for("dashboard"))
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    names = list(student_attendance.keys())
+    counts = list(student_attendance.values())
+
+    bars = ax.bar(names, counts, color='#667eea', edgecolor='#764ba2', linewidth=2)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2., height,
+                f'{int(height)}',
+                ha='center', va='bottom', fontsize=12, fontweight='bold')
+
+    ax.set_xlabel('Student Name', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Attendance Days', fontsize=14, fontweight='bold')
+    ax.set_title('Student Attendance Statistics (by Days)', fontsize=18, fontweight='bold', pad=20)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    plt.xticks(rotation=45, ha='right', fontsize=11)
+    plt.tight_layout()
+
+    img_io = BytesIO()
+    plt.savefig(img_io, format='png', dpi=300, bbox_inches='tight')
+    img_io.seek(0)
+    plt.close()
+
+    today = str(date.today())
+    return send_file(
+        img_io,
+        mimetype='image/png',
+        as_attachment=True,
+        download_name=f'attendance_chart_{today}.png'
+    )
+
+
+@app.route("/generate-chart-rate", methods=["GET"])
+@login_required
+def generate_chart_rate():
+    """Generate attendance rate bar chart with color differentiation"""
+    conn = connect_db()
+    try:
+        cur = conn.cursor()
+
+        cur.execute("SELECT Name FROM Students")
+        all_students = [row['Name'] for row in cur.fetchall()]
+
+        cur.execute("SELECT COUNT(DISTINCT Date) as days FROM Attendance")
+        total_days_result = cur.fetchone()
+        total_days = total_days_result['days'] if total_days_result else 1
+
+        if total_days == 0:
+            total_days = 1
+
+        student_attendance = {name: 0 for name in all_students}
+
+        cur.execute("""
+                    SELECT NAME, COUNT(DISTINCT Date) as days
+                    FROM Attendance
+                    GROUP BY NAME
+                    """)
+
+        for record in cur.fetchall():
+            name = record['NAME']
+            if name in student_attendance:
+                student_attendance[name] = record['days']
+
+    finally:
+        conn.close()
+
+    if not student_attendance:
+        flash("No student data available", "error")
+        return redirect(url_for("dashboard"))
+
+    names = list(student_attendance.keys())
+    rates = [(count / total_days * 100) for count in student_attendance.values()]
+
+    colors = []
+    for rate in rates:
+        if rate >= 80:
+            colors.append('#2ecc71')
+        elif rate >= 60:
+            colors.append('#f39c12')
+        else:
+            colors.append('#e74c3c')
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    bars = ax.bar(names, rates, color=colors, edgecolor='black', linewidth=1.5)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2., height,
+                f'{height:.1f}%',
+                ha='center', va='bottom', fontsize=11, fontweight='bold')
+
+    ax.set_xlabel('Student Name', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Attendance Rate (%)', fontsize=14, fontweight='bold')
+    ax.set_title(f'Student Attendance Rate Statistics (Total Days: {total_days})',
+                 fontsize=18, fontweight='bold', pad=20)
+    ax.set_ylim(0, 105)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    ax.axhline(y=80, color='green', linestyle='--', alpha=0.5, linewidth=2)
+    ax.axhline(y=60, color='orange', linestyle='--', alpha=0.5, linewidth=2)
+
+    legend_elements = [
+        Patch(facecolor='#2ecc71', label='Excellent (≥80%)'),
+        Patch(facecolor='#f39c12', label='Good (60-80%)'),
+        Patch(facecolor='#e74c3c', label='Need Improvement (<60%)')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=11)
+
+    plt.xticks(rotation=45, ha='right', fontsize=11)
+    plt.tight_layout()
+
+    img_io = BytesIO()
+    try:
+        plt.savefig(img_io, format='png', dpi=300, bbox_inches='tight')
+        img_io.seek(0)
+    except Exception as e:
+        print(f"Error saving chart: {e}")
+        flash(f"Error generating chart: {str(e)}", "error")
+        return redirect(url_for("dashboard"))
+    finally:
+        plt.close()
+
+    today = str(date.today())
+    return send_file(
+        img_io,
+        mimetype='image/png',
+        as_attachment=True,
+        download_name=f'attendance_rate_{today}.png'
+    )
 
 
 if __name__ == "__main__":
