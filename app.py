@@ -1293,6 +1293,103 @@ def generate_chart():
     )
 
 
+@app.route("/statistics", methods=["GET", "POST"])
+@login_required
+def statistics():
+    conn = connect_db()
+    try:
+        departments = list_departments(conn)
+        majors = list_majors(conn)
+        courses = list_courses(conn)
+        
+        # Get filter parameters
+        dept_id_raw = (request.form.get("department_id") or request.args.get("department_id") or "").strip()
+        major_id_raw = (request.form.get("major_id") or request.args.get("major_id") or "").strip()
+        course_id_raw = (request.form.get("course_id") or request.args.get("course_id") or "").strip()
+        
+        # Get filtered attendance statistics
+        q = """SELECT DISTINCT s.Name AS StudentName, s.RollNo,
+                      d.Name AS DepartmentName, m.Name AS MajorName, c.Name AS CourseName,
+                      COUNT(DISTINCT a.Date) as AttendanceDays
+               FROM StudentsV2 s
+               JOIN Enrollments e ON e.StudentId = s.Id
+               JOIN Courses c ON c.Id = e.CourseId
+               JOIN Departments d ON d.Id = s.DepartmentId
+               LEFT JOIN Majors m ON m.Id = c.MajorId
+               LEFT JOIN AttendanceV2 a ON a.StudentId = s.Id AND a.CourseId = c.Id"""
+        
+        params = []
+        conditions = []
+        
+        if dept_id_raw.isdigit():
+            conditions.append("d.Id = ?")
+            params.append(int(dept_id_raw))
+        if major_id_raw.isdigit():
+            conditions.append("m.Id = ?")
+            params.append(int(major_id_raw))
+        if course_id_raw.isdigit():
+            conditions.append("c.Id = ?")
+            params.append(int(course_id_raw))
+        
+        if conditions:
+            q += " WHERE " + " AND ".join(conditions)
+        
+        q += " GROUP BY s.Id, c.Id ORDER BY s.Name"
+        
+        if params:
+            rows = conn.execute(q, tuple(params)).fetchall()
+        else:
+            rows = conn.execute(q).fetchall()
+        
+        # Calculate total days for rate calculation
+        total_days_q = "SELECT COUNT(DISTINCT Date) as days FROM AttendanceV2"
+        if params:
+            total_days_q += " WHERE CourseId IN (SELECT Id FROM Courses WHERE "
+            total_conditions = []
+            if dept_id_raw.isdigit():
+                total_conditions.append("DepartmentId = ?")
+            if major_id_raw.isdigit():
+                total_conditions.append("MajorId = ?")
+            if course_id_raw.isdigit():
+                total_conditions.append("Id = ?")
+            if total_conditions:
+                total_days_q += " AND ".join(total_conditions) + ")"
+                total_days_result = conn.execute(total_days_q, tuple(params)).fetchone()
+            else:
+                total_days_result = conn.execute("SELECT COUNT(DISTINCT Date) as days FROM AttendanceV2").fetchone()
+        else:
+            total_days_result = conn.execute("SELECT COUNT(DISTINCT Date) as days FROM AttendanceV2").fetchone()
+        
+        total_days = total_days_result['days'] if total_days_result and total_days_result['days'] > 0 else 1
+        
+        # Calculate statistics for summary cards
+        excellent_count = 0
+        need_improvement_count = 0
+        
+        for row in rows:
+            attendance_days = row['AttendanceDays'] or 0
+            attendance_rate = (attendance_days / total_days) * 100
+            if attendance_rate >= 80:
+                excellent_count += 1
+            elif attendance_rate < 60:
+                need_improvement_count += 1
+        
+    finally:
+        conn.close()
+    
+    return render_template("statistics.html", 
+                         rows=rows, 
+                         departments=departments, 
+                         majors=majors, 
+                         courses=courses,
+                         total_days=total_days,
+                         excellent_count=excellent_count,
+                         need_improvement_count=need_improvement_count,
+                         selected_department=dept_id_raw,
+                         selected_major=major_id_raw,
+                         selected_course=course_id_raw)
+
+
 @app.route("/generate-chart-rate", methods=["GET"])
 @login_required
 def generate_chart_rate():
@@ -1390,6 +1487,155 @@ def generate_chart_rate():
         mimetype='image/png',
         as_attachment=True,
         download_name=f'attendance_rate_{today}.png'
+    )
+
+
+@app.route("/generate-chart-rate-filtered", methods=["GET", "POST"])
+@login_required
+def generate_chart_rate_filtered():
+    """Generate attendance rate bar chart with filtering support"""
+    conn = connect_db()
+    try:
+        # Get filter parameters
+        dept_id_raw = (request.form.get("department_id") or request.args.get("department_id") or "").strip()
+        major_id_raw = (request.form.get("major_id") or request.args.get("major_id") or "").strip()
+        course_id_raw = (request.form.get("course_id") or request.args.get("course_id") or "").strip()
+        
+        # Get filtered students
+        q = """SELECT DISTINCT s.Name AS StudentName, s.RollNo,
+                      d.Name AS DepartmentName, m.Name AS MajorName, c.Name AS CourseName,
+                      COUNT(DISTINCT a.Date) as AttendanceDays
+               FROM StudentsV2 s
+               JOIN Enrollments e ON e.StudentId = s.Id
+               JOIN Courses c ON c.Id = e.CourseId
+               JOIN Departments d ON d.Id = s.DepartmentId
+               LEFT JOIN Majors m ON m.Id = c.MajorId
+               LEFT JOIN AttendanceV2 a ON a.StudentId = s.Id AND a.CourseId = c.Id"""
+        
+        params = []
+        conditions = []
+        
+        if dept_id_raw.isdigit():
+            conditions.append("d.Id = ?")
+            params.append(int(dept_id_raw))
+        if major_id_raw.isdigit():
+            conditions.append("m.Id = ?")
+            params.append(int(major_id_raw))
+        if course_id_raw.isdigit():
+            conditions.append("c.Id = ?")
+            params.append(int(course_id_raw))
+        
+        if conditions:
+            q += " WHERE " + " AND ".join(conditions)
+        
+        q += " GROUP BY s.Id, c.Id ORDER BY s.Name"
+        
+        if params:
+            rows = conn.execute(q, tuple(params)).fetchall()
+        else:
+            rows = conn.execute(q).fetchall()
+        
+        # Calculate total days for rate calculation
+        total_days_q = "SELECT COUNT(DISTINCT Date) as days FROM AttendanceV2"
+        if params:
+            total_days_q += " WHERE CourseId IN (SELECT Id FROM Courses WHERE "
+            total_conditions = []
+            if dept_id_raw.isdigit():
+                total_conditions.append("DepartmentId = ?")
+            if major_id_raw.isdigit():
+                total_conditions.append("MajorId = ?")
+            if course_id_raw.isdigit():
+                total_conditions.append("Id = ?")
+            if total_conditions:
+                total_days_q += " AND ".join(total_conditions) + ")"
+                total_days_result = conn.execute(total_days_q, tuple(params)).fetchone()
+            else:
+                total_days_result = conn.execute("SELECT COUNT(DISTINCT Date) as days FROM AttendanceV2").fetchone()
+        else:
+            total_days_result = conn.execute("SELECT COUNT(DISTINCT Date) as days FROM AttendanceV2").fetchone()
+        
+        total_days = total_days_result['days'] if total_days_result and total_days_result['days'] > 0 else 1
+        
+        # Prepare data for chart
+        student_attendance = {}
+        for row in rows:
+            name = row['StudentName']
+            student_attendance[name] = row['AttendanceDays'] or 0
+        
+    finally:
+        conn.close()
+
+    if not student_attendance:
+        flash("No student data available for the selected filters", "error")
+        return redirect(url_for("statistics"))
+
+    names = list(student_attendance.keys())
+    rates = [(count / total_days * 100) for count in student_attendance.values()]
+
+    colors = []
+    for rate in rates:
+        if rate >= 80:
+            colors.append('#2ecc71')
+        elif rate >= 60:
+            colors.append('#f39c12')
+        else:
+            colors.append('#e74c3c')
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    bars = ax.bar(names, rates, color=colors, edgecolor='black', linewidth=1.5)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2., height,
+                f'{height:.1f}%',
+                ha='center', va='bottom', fontsize=11, fontweight='bold')
+
+    ax.set_xlabel('Student Name', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Attendance Rate (%)', fontsize=14, fontweight='bold')
+    ax.set_title(f'Student Attendance Rate Statistics (Total Days: {total_days})',
+                 fontsize=18, fontweight='bold', pad=20)
+    ax.set_ylim(0, 105)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    ax.axhline(y=80, color='green', linestyle='--', alpha=0.5, linewidth=2)
+    ax.axhline(y=60, color='orange', linestyle='--', alpha=0.5, linewidth=2)
+
+    legend_elements = [
+        Patch(facecolor='#2ecc71', label='Excellent (≥80%)'),
+        Patch(facecolor='#f39c12', label='Good (60-80%)'),
+        Patch(facecolor='#e74c3c', label='Need Improvement (<60%)')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=11)
+
+    plt.xticks(rotation=45, ha='right', fontsize=11)
+    plt.tight_layout()
+
+    img_io = BytesIO()
+    try:
+        plt.savefig(img_io, format='png', dpi=300, bbox_inches='tight')
+        img_io.seek(0)
+    except Exception as e:
+        print(f"Error saving chart: {e}")
+        flash(f"Error generating chart: {str(e)}", "error")
+        return redirect(url_for("statistics"))
+    finally:
+        plt.close()
+
+    today = str(date.today())
+    filter_suffix = ""
+    if dept_id_raw:
+        filter_suffix += f"_dept{dept_id_raw}"
+    if major_id_raw:
+        filter_suffix += f"_major{major_id_raw}"
+    if course_id_raw:
+        filter_suffix += f"_course{course_id_raw}"
+    
+    return send_file(
+        img_io,
+        mimetype='image/png',
+        as_attachment=True,
+        download_name=f'attendance_rate_{today}{filter_suffix}.png'
     )
 
 

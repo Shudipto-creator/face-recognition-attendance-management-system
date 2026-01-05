@@ -1,0 +1,401 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <title>Student Attendance Statistics</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #070a12, #0b1630);
+      color: rgba(255,255,255,.92);
+    }
+    #page::before{
+      content: "";
+      position: absolute;
+      background: radial-gradient(900px 420px at 50% 0%, rgba(69,214,255,.10), transparent 60%);
+      opacity: 1;
+      height: 100%;
+      z-index: -1;
+      width: 100%;
+    }
+    #page { position: relative; }
+    .container{
+      width: min(1100px, 96vw);
+      margin: 30px auto 0;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      padding: 18px 18px 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 1;
+    }
+    h1,h3{ color: rgba(255,255,255,.92) !important; }
+    h3{
+      color: rgba(255,255,255,.92) !important;
+      margin: 0 0 12px 0;
+    }
+    .text-center{ text-align:center; }
+    table.table{
+      width:100%;
+      border-collapse: collapse;
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.9);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    table.table thead th{
+      font-weight: 800;
+      background: rgba(255,255,255,.08);
+      padding: 12px 8px;
+      text-align: left;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    table.table tbody td{
+      padding: 12px 8px;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      vertical-align: middle;
+    }
+    table.table tbody tr:hover{
+      background: rgba(255,255,255,.04);
+    }
+    .btn{
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+    .btn-primary{
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: white;
+    }
+    .btn-primary:hover{
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(46,204,113,0.4);
+    }
+    .btn-success{
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: white;
+    }
+    .btn-success:hover{
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(46,204,113,0.4);
+    }
+    .filter-section{
+      background: rgba(255,255,255,.04);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .filter-row{
+      display: flex;
+      gap: 15px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+    .filter-group{
+      flex: 1;
+      min-width: 150px;
+    }
+    .filter-group label{
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 14px;
+      color: rgba(255,255,255,.8);
+    }
+    .filter-group select{
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 6px;
+      background: rgba(255,255,255,.08);
+      color: white;
+      font-size: 14px;
+    }
+    .filter-group select option{
+      background: #0b1630;
+      color: white;
+    }
+    .chart-container{
+      background: rgba(255,255,255,.04);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .chart-container img{
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+    .stats-summary{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card{
+      background: rgba(255,255,255,.04);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .stat-card h4{
+      margin: 0 0 5px 0;
+      font-size: 14px;
+      color: rgba(255,255,255,.7);
+    }
+    .stat-card .value{
+      font-size: 24px;
+      font-weight: bold;
+      color: rgba(255,255,255,.9);
+    }
+    .attendance-rate {
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .rate-excellent {
+      background: rgba(46,204,113,0.2);
+      color: #2ecc71;
+    }
+    .rate-good {
+      background: rgba(243,156,18,0.2);
+      color: #f39c12;
+    }
+    .rate-poor {
+      background: rgba(231,76,60,0.2);
+      color: #e74c3c;
+    }
+    .navigation{
+      background: rgba(255,255,255,.04);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .navigation a{
+      color: rgba(255,255,255,.8);
+      text-decoration: none;
+      margin: 0 10px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+    .navigation a:hover{
+      background: rgba(255,255,255,.1);
+      color: white;
+    }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-weight: 500;
+    }
+    .alert-success {
+      background: rgba(46,204,113,0.1);
+      border: 1px solid rgba(46,204,113,0.3);
+      color: #2ecc71;
+    }
+    .alert-error {
+      background: rgba(231,76,60,0.1);
+      border: 1px solid rgba(231,76,60,0.3);
+      color: #e74c3c;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: rgba(255,255,255,.7);
+    }
+  </style>
+</head>
+<body>
+<div id="page">
+  <div class="container">
+    <div class="navigation">
+      <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('statistics') }}">Statistics</a>
+      <a href="{{ url_for('manage_students') }}">Students</a>
+      <a href="{{ url_for('manage_attendance') }}">Attendance</a>
+      <a href="{{ url_for('catalog') }}">Catalog</a>
+      <a href="{{ url_for('recognize') }}">Mark Attendance</a>
+      <a href="{{ url_for('how') }}">Logout</a>
+    </div>
+
+    <h1 class="text-center">Student Attendance Statistics</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="filter-section">
+      <h3>Filters</h3>
+      <form method="POST" id="filterForm">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="department_id">School:</label>
+            <select name="department_id" id="department_id">
+              <option value="">All Schools</option>
+              {% for dept in departments %}
+                <option value="{{ dept.Id }}" {% if selected_department == dept.Id|string %}selected{% endif %}>
+                  {{ dept.Name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="major_id">Major:</label>
+            <select name="major_id" id="major_id">
+              <option value="">All Majors</option>
+              {% for major in majors %}
+                <option value="{{ major.Id }}" {% if selected_major == major.Id|string %}selected{% endif %}>
+                  {{ major.Name }} ({{ major.DepartmentName }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="course_id">Course:</label>
+            <select name="course_id" id="course_id">
+              <option value="">All Courses</option>
+              {% for course in courses %}
+                <option value="{{ course.Id }}" {% if selected_course == course.Id|string %}selected{% endif %}>
+                  {{ course.Name }} ({{ course.DepartmentName }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    {% if rows %}
+      <div class="stats-summary">
+        <div class="stat-card">
+          <h4>Total Students</h4>
+          <div class="value">{{ rows|length }}</div>
+        </div>
+        <div class="stat-card">
+          <h4>Total Days</h4>
+          <div class="value">{{ total_days }}</div>
+        </div>
+        <div class="stat-card">
+          <h4>Excellent (≥80%)</h4>
+          <div class="value">{{ excellent_count }}</div>
+        </div>
+        <div class="stat-card">
+          <h4>Need Improvement (<60%)</h4>
+          <div class="value">{{ need_improvement_count }}</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <h3>Attendance Rate Chart</h3>
+        <div id="chartArea">
+          <img id="chartImage" src="{{ url_for('generate_chart_rate_filtered', department_id=selected_department, major_id=selected_major, course_id=selected_course) }}" alt="Attendance Rate Chart" onerror="this.style.display='none'; document.getElementById('chartError').style.display='block';">
+          <div id="chartError" style="display:none; color: #e74c3c; padding: 20px;">
+            Unable to load chart. Please try applying filters or check if data is available.
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <a href="{{ url_for('generate_chart_rate_filtered', department_id=selected_department, major_id=selected_major, course_id=selected_course) }}" class="btn btn-success" download>Download Chart</a>
+        </div>
+      </div>
+
+      <h3>Student Attendance Details</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Roll No</th>
+            <th>School</th>
+            <th>Major</th>
+            <th>Course</th>
+            <th>Days Present</th>
+            <th>Attendance Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% set attendance_rate = ((row.AttendanceDays or 0) / total_days * 100) %}
+            <tr>
+              <td>{{ row.StudentName }}</td>
+              <td>{{ row.RollNo }}</td>
+              <td>{{ row.DepartmentName }}</td>
+              <td>{{ row.MajorName or 'N/A' }}</td>
+              <td>{{ row.CourseName }}</td>
+              <td>{{ row.AttendanceDays or 0 }}</td>
+              <td>
+                <span class="attendance-rate 
+                  {% if attendance_rate >= 80 %}rate-excellent
+                  {% elif attendance_rate >= 60 %}rate-good
+                  {% else %}rate-poor{% endif %}">
+                  {{ "%.1f"|format(attendance_rate) }}%
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="text-center" style="padding: 40px; color: rgba(255,255,255,.7);">
+        <h3>No attendance data found</h3>
+        <p>Try adjusting the filters or mark some attendance first.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // Auto-refresh chart when filters change
+  document.getElementById('department_id').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+  });
+  
+  document.getElementById('major_id').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+  });
+  
+  document.getElementById('course_id').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+  });
+
+  // Refresh chart periodically
+  setInterval(function() {
+    const chartImg = document.getElementById('chartImage');
+    if (chartImg) {
+      const currentSrc = chartImg.src;
+      chartImg.src = currentSrc.split('?')[0] + '?t=' + new Date().getTime();
+    }
+  }, 30000); // Refresh every 30 seconds
+</script>
+</body>
+</html>
