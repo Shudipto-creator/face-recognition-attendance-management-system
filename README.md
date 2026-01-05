@@ -34,6 +34,12 @@ The system captures live video from a webcam, detects faces in real time, extrac
 - Training image dataset management
 - Attendance report generation and CSV export
 - PDF reports with School/Major/Course filtering
+- **📊 Attendance Statistics & Analytics**
+  - Interactive attendance rate charts with color-coded performance
+  - Filter statistics by School, Major, and Course
+  - Visual performance indicators (Excellent ≥80%, Good 60-80%, Need Improvement <60%)
+  - Downloadable charts and detailed attendance breakdown
+  - Real-time summary cards showing key metrics
 - Admin authentication system
 - Web-based dashboard interface
 
@@ -60,6 +66,7 @@ The system captures live video from a webcam, detects faces in real time, extrac
 - CSS
 - JavaScript
 - Bootstrap
+- **Matplotlib** for attendance statistics charts
 
 ---
 
@@ -205,7 +212,51 @@ The application will start on `http://localhost:5000` by default.
 
 - **Today's Attendance**: View and filter today's attendance by School/Major/Course
 - **Whole Database**: View complete attendance history
+- **📊 Attendance Statistics**: 
+  - Interactive charts showing attendance rates with color coding
+  - Filter statistics by School, Major, and Course
+  - Performance indicators (Excellent ≥80%, Good 60-80%, Need Improvement <60%)
+  - Download charts as PNG files
+  - Detailed student-by-student attendance breakdown
 - **PDF Export**: Download filtered attendance reports as PDF
+
+---
+
+## 📊 Attendance Statistics Features
+
+The system includes comprehensive attendance analytics with the following capabilities:
+
+### Interactive Charts
+- **Attendance Rate Bar Charts**: Visual representation of student attendance percentages
+- **Color-Coded Performance**:
+  - 🟢 **Excellent (≥80%)**: Green bars for high performers
+  - 🟡 **Good (60-80%)**: Orange bars for satisfactory performance
+  - 🔴 **Need Improvement (<60%)**: Red bars for low attendance
+- **Reference Lines**: Visual thresholds at 60% and 80% for quick assessment
+- **Downloadable Charts**: Export charts as PNG files for reports
+
+### Advanced Filtering
+- **Multi-Level Filtering**: Filter by School → Major → Course hierarchy
+- **Real-Time Updates**: Charts and statistics update instantly when filters change
+- **Combined Filters**: Apply multiple filters simultaneously for precise analysis
+
+### Statistical Summaries
+- **Total Students**: Number of students in filtered dataset
+- **Total Days**: Number of attendance days recorded
+- **Performance Counters**: 
+  - Count of students with Excellent attendance (≥80%)
+  - Count of students needing improvement (<60%)
+- **Individual Breakdown**: Detailed table showing each student's attendance rate
+
+### Technical Implementation
+- **Dynamic Chart Generation**: Uses Matplotlib for server-side chart creation
+- **Responsive Design**: Mobile-friendly interface with modern UI
+- **Auto-Refresh**: Charts automatically refresh every 30 seconds
+- **Error Handling**: Graceful handling of missing data or loading errors
+
+### Access Routes
+- `/statistics` - Main statistics page with filters and charts
+- '/generate-chart-rate-filtered' - API endpoint for filtered chart generation
 
 ---
 
@@ -223,6 +274,7 @@ face-recognition-attendance-management-system/
 │   ├── new.html          # Student registration
 │   ├── form2.html        # Today's attendance
 │   ├── form3.html        # Whole database view
+│   ├── statistics.html   # 📊 Attendance statistics page
 │   ├── catalog.html      # Schools/Majors/Courses management
 │   └── ...               # Other templates
 ├── static/               # Static assets (CSS, JS)
