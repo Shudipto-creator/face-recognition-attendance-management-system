@@ -142,7 +142,7 @@ erDiagram
 ### Step 1: Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Shudipto-creator/face-recognition-attendance-management-system.git
 cd face-recognition-attendance-management-system
 ```
 
