@@ -803,7 +803,7 @@ def download_todays_attendance_pdf():
         from reportlab.pdfgen import canvas
     except ModuleNotFoundError:
         flash("PDF export requires the 'reportlab' package. Install it with: pip install reportlab", "error")
-        return redirect(url_for("data"))
+        return redirect(url_for("dashboard"))
 
     today = str(date.today())
     dept_id_raw = (request.args.get("department_id") or "").strip()
