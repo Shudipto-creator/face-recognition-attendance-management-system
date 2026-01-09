@@ -443,11 +443,24 @@ def name():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cam = cv2.VideoCapture(0)
+    
+    # Check if camera opened successfully
+    if not cam.isOpened():
+        flash("Camera not available. Please check if a camera is connected and not being used by another application.", "error")
+        return redirect(url_for("new_student"))
+    
     try:
+        # Try to read a test frame to ensure camera is working
+        ret, test_frame = cam.read()
+        if not ret:
+            flash("Failed to capture from camera. Please check if the camera is working properly.", "error")
+            return redirect(url_for("new_student"))
+            
         while True:
             ret, frame = cam.read()
             if not ret:
-                return "failed to grab frame", 500
+                flash("Failed to grab frame from camera.", "error")
+                return redirect(url_for("new_student"))
 
             cv2.imshow("Press Space to capture image", frame)
             k = cv2.waitKey(1)
@@ -459,6 +472,9 @@ def name():
                 out_path = out_dir / img_name
                 cv2.imwrite(str(out_path), frame)
                 break
+    except Exception as e:
+        flash(f"Camera error: {str(e)}", "error")
+        return redirect(url_for("new_student"))
     finally:
         cam.release()
         cv2.destroyAllWindows()
