@@ -1,0 +1,23 @@
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: "production"
+      FLASK_DEBUG: "0"
+      FLASK_SECRET_KEY: "change-me-in-production"
+      APP_DB_PATH: "/data/db/information.db"
+      APP_ATTENDANCE_CSV: "/data/db/attendance.csv"
+      APP_CRED_CSV: "/data/db/cred.csv"
+      APP_TRAINING_DIR: "/data/training"
+      MPLCONFIGDIR: "/tmp/matplotlib"
+    volumes:
+      - db_data:/data/db
+      - training_data:/data/training
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  training_data:

@@ -1,0 +1,24 @@
+[project]
+name = "face-recognition-attendance-management-system"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "flask>=2.0",
+  "gunicorn>=21.0",
+  "opencv-python>=4.6",
+  "dlib>=19.24",
+  "face-recognition>=1.3.0",
+  "setuptools>=65",
+  "numpy>=1.23",
+  "pandas>=1.5",
+  "matplotlib>=3.6",
+  "pillow>=9.0",
+  "reportlab>=4.0",
+  "moviepy>=1.0.3",
+  "imageio>=2.0",
+  "imageio-ffmpeg>=0.4",
+  "requests>=2.0",
+  "tqdm>=4.0",
+]
+
+[tool.uv]

@@ -27,10 +27,11 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
 
 # Define Base Paths to avoid "File Not Found" errors
 BASE_DIR = Path(__file__).resolve().parent
-TRAINING_DIR = BASE_DIR / "Training images"
-ATTENDANCE_CSV = BASE_DIR / "attendance.csv"
-DB_PATH = BASE_DIR / "information.db"
-CRED_CSV = BASE_DIR / "cred.csv"
+DATA_DIR = Path(os.environ.get("APP_DATA_DIR", str(BASE_DIR))).resolve()
+TRAINING_DIR = Path(os.environ.get("APP_TRAINING_DIR", str(DATA_DIR / "Training images"))).resolve()
+ATTENDANCE_CSV = Path(os.environ.get("APP_ATTENDANCE_CSV", str(DATA_DIR / "attendance.csv"))).resolve()
+DB_PATH = Path(os.environ.get("APP_DB_PATH", str(DATA_DIR / "information.db"))).resolve()
+CRED_CSV = Path(os.environ.get("APP_CRED_CSV", str(DATA_DIR / "cred.csv"))).resolve()
 
 
 def norm_name(s: str) -> str:

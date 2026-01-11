@@ -133,6 +133,75 @@ erDiagram
 
 ## Installation & Setup
 
+## Docker (Production-Ready, Reproducible)
+
+This repository includes a complete Docker setup that:
+
+1. Builds on Linux with the required native dependencies for `dlib` and `opencv-python`.
+2. Installs Python dependencies using `uv` and **locks them strictly** via `uv.lock` (`uv sync --frozen`).
+3. Persists attendance data (SQLite + CSV) and training images across restarts using Docker volumes.
+
+### Prerequisites
+
+- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
+- Docker Compose v2
+
+### Build and Run
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+`http://localhost:5000`
+
+### Stop
+
+```bash
+docker compose down
+```
+
+### Rebuild (No Cache)
+
+```bash
+docker compose build --no-cache
+docker compose up
+```
+
+### Data Persistence
+
+The Compose file defines two named volumes:
+
+- **db_data**: `/data/db` (stores `information.db`, `attendance.csv`, `cred.csv`)
+- **training_data**: `/data/training` (stores training images)
+
+These volumes keep data across container restarts and image rebuilds.
+
+### Environment Variables
+
+The container is configured through environment variables (see `docker-compose.yml`):
+
+- `FLASK_SECRET_KEY`: set a strong value for production
+- `APP_DB_PATH`: path to SQLite DB file (default overridden to `/data/db/information.db`)
+- `APP_ATTENDANCE_CSV`: attendance CSV path
+- `APP_CRED_CSV`: credentials CSV path
+- `APP_TRAINING_DIR`: training images directory path
+
+### How `uv.lock` Ensures Reproducible Builds
+
+Docker builds run:
+
+```bash
+uv sync --frozen --no-dev --no-install-project
+```
+
+`--frozen` forces `uv` to install **exactly** the versions recorded in `uv.lock`. If the lock file and `pyproject.toml` are out of sync, the build will fail instead of silently changing dependency versions.
+
+---
+
 ### Prerequisites
 
 - Python 3.8 or higher
@@ -304,6 +373,36 @@ The system uses SQLite (`information.db`). The database is automatically created
 1. **Camera not detected**: Ensure your webcam is properly connected and not used by other applications
 2. **Face recognition not working**: Ensure proper lighting and face positioning during registration
 3. **Database errors**: Delete `information.db` and restart the application to recreate the database
+
+### Docker-specific Issues
+
+1. **dlib build failures**
+
+   - **Symptom**: Build errors like missing C++ compiler/CMake.
+   - **Fix**: This image installs `build-essential` and `cmake`. If you still see failures, rebuild without cache:
+
+   ```bash
+   docker compose build --no-cache
+   ```
+
+   - **Note**: `dlib` may compile from source depending on platform/available wheels, so the first build can take several minutes.
+
+2. **OpenCV import errors (`ImportError: libGL.so.1` or similar)**
+
+   - **Fix**: The image includes `libgl1`, `libglib2.0-0`, `libsm6`, `libxrender1`, and `libxext6`.
+   - If you changed the Dockerfile, ensure those packages remain installed.
+
+3. **Permission problems with persisted data**
+
+   - **Symptom**: SQLite cannot write, or training images cannot be saved.
+   - **Fix**: The container uses an entrypoint that `chown`s `/data` at startup (when running as root) and then drops privileges.
+   - If you bind-mount local folders instead of named volumes, ensure the host directory is writable.
+
+4. **Camera/webcam access in Docker**
+
+   - This application uses `cv2.VideoCapture(0)`. Accessing a physical webcam from inside a container can require extra host configuration.
+   - For Linux you may need to pass through `/dev/video0` (not enabled by default here to keep the setup portable).
+   - The Docker environment is CPU-only and does not require a GPU.
 
 ### Performance Tips
 

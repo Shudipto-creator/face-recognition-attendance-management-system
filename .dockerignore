@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.pdb
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Local env files / secrets
+.env
+.env.*
+
+# Local databases / runtime data (use volumes in docker-compose)
+*.db
+*.sqlite
+*.sqlite3
+information.db
+attendance.csv
+cred.csv
+
+# Training data should be mounted, not baked into image
+Training images/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+
+# Node
+node_modules/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

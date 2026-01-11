@@ -163,4 +163,4 @@ Thumbs.db
 node_modules/
 
 # Docker
-.dockerignore
+!.dockerignore
